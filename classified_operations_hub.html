@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-950 text-slate-100 select-none">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TRUNG TÂM GIÁM SÁT TÁC CHIẾN ĐỊA BÀN</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            tactical: {
+              cyan: '#00f0ff',
+              blue: '#0a84ff',
+              red: '#ff3b30',
+              yellow: '#ffd60a',
+              green: '#30d158',
+              card: '#0d1527'
+            }
+          },
+          fontFamily: {
+            mono: ['Fira Code', 'Courier New', 'monospace'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    /* Clean Tactical Grid Background */
+    .tactical-grid {
+      background-size: 32px 32px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.04) 1px, transparent 1px);
+    }
+
+    /* High Clarity Leaflet Overrides */
+    .leaflet-container {
+      background-color: #050b14 !important;
+      font-family: 'Inter', sans-serif !important;
+    }
+    
+    .leaflet-popup-content-wrapper {
+      background: #0d172a !important;
+      color: #f8fafc !important;
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+      border-radius: 8px;
+    }
+    .leaflet-popup-tip { 
+      background: #0d172a !important; 
+    }
+
+    /* Marker Glowing Effects */
+    .pin-glow-blue {
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+    }
+    .pin-glow-red {
+      box-shadow: 0 0 15px rgba(255, 59, 48, 0.6);
+    }
+
+    /* Glassmorphism Panel */
+    .glass-panel {
+      background: rgba(10, 18, 32, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #050b14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00f0ff;
+    }
+  </style>
+</head>
+<body class="h-full w-full overflow-hidden font-sans bg-slate-950 text-slate-100 tactical-grid relative">
+
+  <!-- 1. LOADING SCREEN -->
+  <div id="loading-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 p-6 transition-opacity duration-500">
+    <div class="max-w-md w-full flex flex-col items-center space-y-6 text-center">
+      <div class="w-20 h-20 rounded-2xl border border-cyan-500/50 flex items-center justify-center bg-slate-900 shadow-[0_0_30px_rgba(0,240,255,0.25)]">
+        <i class="fa-solid fa-radar text-4xl text-cyan-400 animate-spin" style="animation-duration: 4s;"></i>
+      </div>
+
+      <div>
+        <h1 class="text-xl font-bold tracking-widest text-cyan-400 uppercase font-mono">HỆ THỐNG TÁC CHIẾN BẢO VỆ ĐỊA BÀN</h1>
+        <p class="text-xs text-slate-400 tracking-wider mt-1">ĐANG KHỞI TẠO BẢN ĐỒ GIÁM SÁT KĨ THUẬT SỐ...</p>
+      </div>
+
+      <div class="w-full space-y-2">
+        <div class="flex justify-between text-xs font-mono text-slate-400">
+          <span id="load-status">KẾT NỐI TỌA ĐỘ TÁC CHIẾN...</span>
+          <span id="load-percent" class="font-bold text-cyan-400">0%</span>
+        </div>
+        <div class="w-full bg-slate-900 border border-slate-800 h-2.5 rounded-full overflow-hidden p-0.5">
+          <div id="progress-bar" class="bg-gradient-to-r from-blue-600 to-cyan-400 h-full rounded-full w-0 transition-all duration-150"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. AUTHENTICATION MODAL -->
+  <div id="auth-modal" class="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/95 backdrop-blur-md hidden p-4">
+    <div class="w-full max-w-sm glass-panel rounded-2xl shadow-2xl p-6 border border-cyan-500/30">
+      <div class="text-center space-y-3 mb-6">
+        <div class="inline-flex p-4 rounded-xl bg-slate-900 border border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(0,240,255,0.2)]">
+          <i class="fa-solid fa-shield-halved text-3xl"></i>
+        </div>
+        <h2 class="text-lg font-bold tracking-wider text-slate-100 uppercase">XÁC NHẬN TRUY CẬP</h2>
+        <p class="text-xs text-slate-400">Vui lòng nhập mật khẩu để mở khóa hệ thống</p>
+      </div>
+
+      <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+        <div>
+          <input 
+            type="password" 
+            id="passcode-input" 
+            placeholder="Mật khẩu xác nhận..." 
+            class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 text-center text-cyan-300 placeholder-slate-600 font-mono text-lg font-bold tracking-wider py-3 px-4 rounded-xl outline-none transition-all shadow-inner"
+            autocomplete="off"
+            autofocus
+          />
+        </div>
+
+        <div id="auth-alert" class="hidden text-center text-xs py-2 px-3 rounded-lg font-semibold border"></div>
+
+        <button 
+          type="submit" 
+          id="btn-unlock"
+          class="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-slate-950 font-bold tracking-wider uppercase rounded-xl shadow-lg transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center space-x-2"
+        >
+          <i class="fa-solid fa-lock-open"></i>
+          <span>XÁC NHẬN TRUY CẬP</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. MAIN DASHBOARD HUD -->
+  <div id="main-dashboard" class="h-full w-full flex flex-col hidden">
+    <!-- Navbar Header -->
+    <header class="bg-slate-900/90 border-b border-slate-800 p-3 px-4 flex items-center justify-between z-20 shadow-lg backdrop-blur-md">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-slate-800 border border-cyan-500/40 rounded-lg text-cyan-400">
+          <i class="fa-solid fa-location-crosshairs text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-bold tracking-wider text-sm text-slate-100 flex items-center space-x-2">
+            <span>TRUNG TÂM GIÁM SÁT TÁC CHIẾN ĐỊA BÀN</span>
+            <span class="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-600 text-[10px] rounded font-mono font-semibold uppercase">HOẠT ĐỘNG</span>
+          </h1>
+          <div class="text-[11px] text-slate-400 font-mono">VÙNG CỐ ĐỊNH BAN CƠ YẾU | ĐẮK LẮK</div>
+        </div>
+      </div>
+
+      <!-- Header Controls -->
+      <div class="flex items-center space-x-3">
+        <div class="hidden sm:flex items-center space-x-2 text-xs bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-lg text-slate-300 font-mono">
+          <i class="fa-solid fa-clock text-cyan-400"></i>
+          <span id="live-clock">00:00:00</span>
+        </div>
+
+        <button onclick="clearAllMarkers()" class="px-3 py-1.5 text-xs bg-slate-950 hover:bg-red-950/50 text-red-400 border border-red-900/60 rounded-lg flex items-center space-x-1.5 transition cursor-pointer">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>XÓA TẤT CẢ MỐC</span>
+        </button>
+
+        <button onclick="lockSystem()" class="px-3 py-1.5 text-xs bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-lg flex items-center space-x-1.5 transition cursor-pointer">
+          <i class="fa-solid fa-lock text-cyan-400"></i>
+          <span>KHÓA HỆ THỐNG</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 relative flex flex-col md:flex-row overflow-hidden">
+      <!-- Sidebar Control Panel -->
+      <aside class="w-full md:w-80 bg-slate-900/95 border-r border-slate-800 flex flex-col z-10 p-4 space-y-4 overflow-y-auto">
+        <div>
+          <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span>CHỌN ĐƠN VỊ TÁC CHIẾN</span>
+            <i class="fa-solid fa-layer-group text-slate-400"></i>
+          </h2>
+          <p class="text-[11px] text-slate-400 mb-3">Chọn loại biểu tượng bên dưới, sau đó nhấp vào bản đồ để đánh dấu vị trí:</p>
+
+          <div class="grid grid-cols-1 gap-2" id="marker-selector">
+            <button onclick="selectMarkerType('patrol')" data-type="patrol" class="marker-btn active p-2.5 bg-slate-950 hover:bg-slate-800 border-2 border-cyan-400 rounded-xl flex items-center space-x-3 text-left transition">
+              <div class="w-8 h-8 rounded-lg bg-blue-950 border border-blue-400 flex items-center justify-center text-cyan-400">
+                <i class="fa-solid fa-person-military-pointing text-base"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-100">Anh tuần tra</div>
+                <div class="text-[10px] text-slate-400">Đơn vị di động tuần tra khu vực</div>
+              </div>
+            </button>
+
+            <button onclick="selectMarkerType('swat')" data-type="swat" class="marker-btn p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center space-x-3 text-left transition">
+              <div class="w-8 h-8 rounded-lg bg-purple-950 border border-purple-400 flex items-center justify-center text-purple-400">
+                <i class="fa-solid fa-user-shield text-base"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-100">Cảnh sát SWAT</div>
+                <div class="text-[10px] text-slate-400">Lực lượng ứng cứu đặc biệt</div>
+              </div>
+            </button>
+
+            <button onclick="selectMarkerType('cctv')" data-type="cctv" class="marker-btn p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center space-x-3 text-left transition">
+              <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-400 flex items-center justify-center text-emerald-400">
+                <i class="fa-solid fa-video text-base"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-100">Trạm CCTV</div>
+                <div class="text-[10px] text-slate-400">Camera quan sát 24/7</div>
+              </div>
+            </button>
+
+            <button onclick="selectMarkerType('danger')" data-type="danger" class="marker-btn p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center space-x-3 text-left transition">
+              <div class="w-8 h-8 rounded-lg bg-red-950 border border-red-500 flex items-center justify-center text-red-500">
+                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-100">Khu vực nguy hiểm</div>
+                <div class="text-[10px] text-slate-400">Cảnh báo chướng ngại / sự cố</div>
+              </div>
+            </button>
+
+            <button onclick="selectMarkerType('base')" data-type="base" class="marker-btn p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center space-x-3 text-left transition">
+              <div class="w-8 h-8 rounded-lg bg-yellow-950 border border-yellow-500 flex items-center justify-center text-yellow-400">
+                <i class="fa-solid fa-house-chimney-medical text-base"></i>
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-100">Căn cứ an toàn</div>
+                <div class="text-[10px] text-slate-400">Điểm tập kết hậu cần</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Deployed Pins Active List -->
+        <div class="flex-1 flex flex-col pt-3 border-t border-slate-800 min-h-[160px]">
+          <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <span>DANH SÁCH MỐC ĐỊNH VỊ</span>
+            <span id="active-pin-count" class="px-2 py-0.5 bg-slate-950 text-cyan-400 rounded-full text-[10px] font-mono border border-cyan-500/40 font-bold">0</span>
+          </h2>
+          <div id="pins-list" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs">
+            <div class="text-slate-500 text-center py-6">Chưa có mốc định vị nào trên bản đồ.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Map Display Canvas -->
+      <main class="flex-1 relative bg-slate-950">
+        <div id="map" class="w-full h-full"></div>
+
+        <!-- Live Coordinates Footer HUD -->
+        <div class="absolute bottom-4 left-4 z-[400] bg-slate-900/90 border border-cyan-500/40 px-3.5 py-2 rounded-xl text-xs flex items-center space-x-3 shadow-xl backdrop-blur-md pointer-events-none">
+          <div class="text-cyan-400 font-mono font-bold flex items-center space-x-2">
+            <i class="fa-solid fa-crosshairs text-cyan-400"></i>
+            <span id="coord-display">12.851450, 108.255500</span>
+          </div>
+          <span class="text-slate-700">|</span>
+          <span class="text-slate-300 text-[10px] font-mono uppercase tracking-wider">KHU VỰC CỐ ĐỊNH BAN CƠ YẾU</span>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================
+       CONFIG & CONSTANTS
+       ========================================== */
+    const MASTER_PASSCODE = "hoangde";
+
+    // EXACT RECTANGLE BOUNDARY POLYGON
+    const RECT_POLYGON = [
+      [12.85102188497338, 108.25474203918081],
+      [12.852124707388532, 108.2552247071724],
+      [12.851782140495622, 108.25638476254198],
+      [12.850874728219074, 108.25607899073503]
+    ];
+
+    // Expanded Panning Buffer Bounds to Ensure 100% Tile Loading
+    const MAP_RESTRICTED_BOUNDS = [
+      [12.8400, 108.2450], // SW Buffer
+      [12.8630, 108.2670]  // NE Buffer
+    ];
+    const MAP_CENTER = [12.85145, 108.2555];
+
+    let map = null;
+    let selectedType = 'patrol';
+    let activeMarkers = [];
+
+    const MARKER_CONFIGS = {
+      patrol: { 
+        icon: 'fa-person-military-pointing', 
+        color: '#00f0ff', 
+        label: 'Anh tuần tra', 
+        bg: 'bg-blue-950 border-cyan-400 text-cyan-400', 
+        glow: 'pin-glow-blue' 
+      },
+      swat: { 
+        icon: 'fa-user-shield', 
+        color: '#c084fc', 
+        label: 'Cảnh sát SWAT', 
+        bg: 'bg-purple-950 border-purple-400 text-purple-400', 
+        glow: '' 
+      },
+      cctv: { 
+        icon: 'fa-video', 
+        color: '#30d158', 
+        label: 'Trạm CCTV', 
+        bg: 'bg-emerald-950 border-emerald-400 text-emerald-400', 
+        glow: '' 
+      },
+      danger: { 
+        icon: 'fa-triangle-exclamation', 
+        color: '#ff3b30', 
+        label: 'Khu vực nguy hiểm', 
+        bg: 'bg-red-950 border-red-500 text-red-500', 
+        glow: 'pin-glow-red' 
+      },
+      base: { 
+        icon: 'fa-house-chimney-medical', 
+        color: '#ffd60a', 
+        label: 'Căn cứ an toàn', 
+        bg: 'bg-yellow-950 border-yellow-400 text-yellow-400', 
+        glow: '' 
+      }
+    };
+
+    /* ==========================================
+       1. INITIAL LOADING PROGRESS
+       ========================================== */
+    window.addEventListener('load', () => {
+      // Live Clock Updating
+      setInterval(() => {
+        const d = new Date();
+        document.getElementById('live-clock').innerText = d.toTimeString().split(' ')[0];
+      }, 1000);
+
+      let progress = 0;
+      const progressBar = document.getElementById('progress-bar');
+      const loadPercent = document.getElementById('load-percent');
+      const loadStatus = document.getElementById('load-status');
+
+      const statuses = [
+        "NỐI THÔNG MẠNG DỮ LIỆU ĐỊA BÀN...",
+        "TẢI BAN CƠ YẾU THÔNG TIN BẢN ĐỒ...",
+        "KÍCH HOẠT HỆ THỐNG GIÁM SÁT...",
+        "HOÀN TẤT KHỞI TẠO."
+      ];
+
+      const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 25) + 15;
+        if (progress > 100) progress = 100;
+
+        progressBar.style.width = `${progress}%`;
+        loadPercent.innerText = `${progress}%`;
+
+        if (progress > 30 && progress < 70) loadStatus.innerText = statuses[1];
+        if (progress >= 70 && progress < 100) loadStatus.innerText = statuses[2];
+        if (progress === 100) loadStatus.innerText = statuses[3];
+
+        if (progress === 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            document.getElementById('loading-screen').classList.add('opacity-0');
+            setTimeout(() => {
+              document.getElementById('loading-screen').classList.add('hidden');
+              document.getElementById('auth-modal').classList.remove('hidden');
+              document.getElementById('passcode-input').focus();
+            }, 500);
+          }, 300);
+        }
+      }, 120);
+    });
+
+    /* ==========================================
+       2. LOGIN & AUTHENTICATION (HOANGDE)
+       ========================================== */
+    function handleAuth(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('passcode-input').value.trim().toLowerCase();
+      const alertBox = document.getElementById('auth-alert');
+
+      if (input === MASTER_PASSCODE) {
+        alertBox.className = "text-center text-xs py-2 px-3 rounded-lg font-bold border bg-emerald-950 border-emerald-500 text-emerald-300";
+        alertBox.innerText = "XÁC NHẬN MẬT KHẨU CHÍNH XÁC";
+        alertBox.classList.remove('hidden');
+
+        setTimeout(() => {
+          document.getElementById('auth-modal').classList.add('hidden');
+          document.getElementById('main-dashboard').classList.remove('hidden');
+          initMap();
+        }, 300);
+      } else {
+        alertBox.className = "text-center text-xs py-2 px-3 rounded-lg font-bold border bg-red-950 border-red-500 text-red-300";
+        alertBox.innerText = "MẬT KHẨU KHÔNG CHÍNH XÁC!";
+        alertBox.classList.remove('hidden');
+      }
+    }
+
+    function lockSystem() {
+      document.getElementById('main-dashboard').classList.add('hidden');
+      document.getElementById('auth-modal').classList.remove('hidden');
+      document.getElementById('passcode-input').value = '';
+      document.getElementById('auth-alert').classList.add('hidden');
+    }
+
+    /* ==========================================
+       3. MAP INITIALIZATION & STRICT BOUNDS
+       ========================================== */
+    function initMap() {
+      if (map) {
+        setTimeout(() => map.invalidateSize(), 100);
+        return;
+      }
+
+      // Initialize Leaflet Map
+      map = L.map('map', {
+        center: MAP_CENTER,
+        zoom: 18,
+        minZoom: 16,
+        maxZoom: 19,
+        maxBounds: MAP_RESTRICTED_BOUNDS,
+        maxBoundsViscosity: 0.8,
+        zoomControl: true
+      });
+
+      // High-Reliability OSM Tile Layer
+      const baseTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 19,
+        subdomains: ['a', 'b', 'c']
+      });
+
+      // CartoDB Dark Matter Layer Fallback
+      const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; CartoDB',
+        maxZoom: 19,
+        subdomains: 'abcd'
+      });
+
+      baseTiles.addTo(map);
+
+      // Draw active restricted operation polygon rectangle on map
+      const poly = L.polygon(RECT_POLYGON, {
+        color: '#00f0ff',
+        weight: 3,
+        dashArray: '8, 8',
+        fillColor: '#0a84ff',
+        fillOpacity: 0.2
+      }).addTo(map);
+
+      // Auto fit map view to exact polygon bounds
+      map.fitBounds(poly.getBounds(), { padding: [50, 50] });
+
+      // Track cursor coordinates
+      map.on('mousemove', (e) => {
+        document.getElementById('coord-display').innerText = 
+          `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+      });
+
+      // Click to place marker pin
+      map.on('click', (e) => {
+        const title = prompt("Nhập tên mốc / ghi chú vị trí:", MARKER_CONFIGS[selectedType].label);
+        if (title !== null) {
+          addMarker(e.latlng.lat, e.latlng.lng, selectedType, title || MARKER_CONFIGS[selectedType].label);
+        }
+      });
+
+      // Force view size recalculation to display map 100%
+      [100, 300, 600].forEach(delay => {
+        setTimeout(() => {
+          if (map) map.invalidateSize();
+        }, delay);
+      });
+
+      loadStoredMarkers();
+    }
+<!-- ... existing code -->
