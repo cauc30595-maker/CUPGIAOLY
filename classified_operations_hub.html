@@ -130,6 +130,26 @@ select{width:100%;padding:11px;border-radius:12px;background:#050c18;color:var(-
 path.zone{animation:dash 1.2s linear infinite;filter:drop-shadow(0 0 6px var(--cy))}
 path.rt{animation:dash .9s linear infinite}
 @keyframes dash{to{stroke-dashoffset:-24}}
+.scr:after{content:"";position:absolute;width:60vmax;height:60vmax;left:-15vmax;top:-20vmax;background:radial-gradient(circle,rgba(10,132,255,.3),transparent 60%);filter:blur(30px);animation:aur 14s ease-in-out infinite alternate;pointer-events:none}
+@keyframes aur{to{transform:translate(45vmax,35vmax)}}
+.card{background:linear-gradient(160deg,rgba(15,30,56,.94),rgba(5,11,22,.94));box-shadow:0 0 0 1px rgba(0,240,255,.3),0 30px 80px rgba(0,0,0,.6),0 0 90px rgba(0,240,255,.16);overflow:hidden}
+.card:before{content:"";position:absolute;left:12%;right:12%;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--cy),transparent)}
+.ico{animation:flt 3.5s ease-in-out infinite}
+@keyframes flt{50%{transform:translateY(-6px)}}
+.btn{position:relative;overflow:hidden}
+.btn:after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:swp 2.8s infinite}
+@keyframes swp{to{left:130%}}
+header{background:linear-gradient(90deg,rgba(10,22,42,.95),rgba(8,14,26,.9));box-shadow:0 4px 30px rgba(0,240,255,.08)}
+.logo{box-shadow:0 0 18px rgba(0,240,255,.6)}
+#mapw:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:450;box-shadow:inset 0 0 130px rgba(0,0,0,.7),inset 0 0 0 1px rgba(0,240,255,.15)}
+.zc button:hover,.chip:hover,.sb:hover{box-shadow:0 0 18px rgba(0,240,255,.4);border-color:var(--cy)}
+.row,.ty{transition:.18s}.row:hover{transform:translateX(3px);border-color:var(--cy);background:#0a1a2e}
+.tabs button.on{text-shadow:0 0 10px var(--cy);box-shadow:inset 0 -12px 20px -14px var(--cy)}
+.toast{border-left:4px solid var(--cy);background:linear-gradient(90deg,rgba(0,240,255,.12),rgba(10,20,36,.96) 40%)}
+.hud{box-shadow:0 0 24px rgba(0,240,255,.12)}
+.pin{background:radial-gradient(circle at 35% 30%,#14304f,#07111f)}
+.lb2{font:700 10px Orbitron;color:#fff;background:rgba(5,12,24,.9);border:1px solid var(--c);padding:3px 8px;border-radius:8px;white-space:nowrap;transform:translate(-50%,24px);box-shadow:0 0 12px -2px var(--c)}
+.pane::-webkit-scrollbar{width:4px}.pane::-webkit-scrollbar-thumb{background:#1d3150;border-radius:4px}
 @media(max-width:820px){#work{flex-direction:column-reverse}#side{width:100%;height:42%;border-left:0;border-top:1px solid var(--line);animation:none}.brand small{display:none}.hide-m{display:none}}
 </style>
 </head>
@@ -149,7 +169,7 @@ path.rt{animation:dash .9s linear infinite}
 </div></div>
 
 <div id="auth" class="scr hide"><div class="card">
-  <div class="ico">🛡️</div><h2>XÁC NHẬN TRUY CẬP</h2><p>Nhập mật khẩu để mở khóa hệ thống</p>
+  <div class="ico">🛡️</div><h2>XÁC NHẬN TRUY CẬP</h2><p>Nhập mật khẩu thành viên, hoặc mật khẩu đội trưởng để có quyền quản lý</p>
   <input type="password" id="pw" placeholder="Mật khẩu..." autocomplete="off">
   <div class="msg" id="amsg"></div><button class="btn" id="abtn">MỞ KHÓA</button>
 </div></div>
@@ -191,9 +211,9 @@ path.rt{animation:dash .9s linear infinite}
 <div id="dlg" class="scr hide" style="z-index:80;background:rgba(2,6,12,.8)"><div class="card"><h2 id="dt"></h2><input id="di" maxlength="80"><button class="btn" id="dok">XÁC NHẬN</button><button class="sb" id="dno" style="margin-top:8px">HỦY</button></div></div>
 
 <script>
-const PASS='hoangde';
+const PASS_M='hoangde',PASS_A='admin';let isAdmin=false;
 const POLY=[[12.85094533390599,108.2547419095773],[12.851850130906366,108.25516838078791],[12.851467030842388,108.25632173060681],[12.850775050139166,108.25604140026543]];
-const TYPES={patrol:{e:'🚶',c:'#00f0ff',l:'Tuần tra',d:'Đơn vị di động trong khu vực'},swat:{e:'🛡️',c:'#c084fc',l:'Lực lượng ứng cứu',d:'Hỗ trợ khi có sự cố'},cctv:{e:'📹',c:'#30d158',l:'Trạm CCTV',d:'Camera quan sát 24/7'},danger:{e:'⚠️',c:'#ff3b30',l:'Khu vực nguy hiểm',d:'Cảnh báo chướng ngại / sự cố'},base:{e:'🏠',c:'#ffd60a',l:'Căn cứ an toàn',d:'Điểm tập kết hậu cần'}};
+const TYPES={patrol:{e:'🚶',c:'#00f0ff',l:'Tuần tra',d:'Đơn vị di động trong khu vực'},swat:{e:'🛡️',c:'#c084fc',l:'Lực lượng ứng cứu',d:'Hỗ trợ khi có sự cố'},cctv:{e:'📹',c:'#30d158',l:'Trạm CCTV',d:'Camera, ghi tên để phân biệt từng cái'},danger:{e:'⚠️',c:'#ff3b30',l:'Khu vực nguy hiểm',d:'Cảnh báo chướng ngại / sự cố'},base:{e:'🏠',c:'#ffd60a',l:'Căn cứ an toàn',d:'Điểm tập kết hậu cần'},drill:{e:'⛏️',c:'#ff9f0a',l:'Điểm khoan',d:'Vị trí khoan, ghi tên để phân biệt'},custom:{e:'📍',c:'#ff6ad5',l:'Mốc tùy chỉnh',d:'Tự đặt tên cho bất kỳ vị trí nào'}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const key=s=>s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]/g,'');
@@ -217,7 +237,7 @@ const storeP=initStore();
   let p=0,li=0;const lg=$('logs');
   const t=setInterval(()=>{p=Math.min(100,p+1+Math.random()*3);const n=Math.round(p*28/100);[...bar.children].forEach((b,i)=>b.classList.toggle('on',i<n));$('bpc').textContent=Math.round(p)+'%';$('bst').textContent=S[Math.min(4,Math.floor(p/21))];
     const want=Math.min(L.length,Math.floor(p/17)+1);while(li<want){const d=document.createElement('div');d.textContent=L[li++];lg.appendChild(d);while(lg.children.length>3)lg.firstChild.remove()}
-    if(p>=100){clearInterval(t);setTimeout(()=>{$('boot').classList.add('out');setTimeout(()=>{$('boot').classList.add('hide');gate()},600)},500)}},70);
+    if(p>=100){clearInterval(t);setTimeout(()=>{$('boot').classList.add('out');setTimeout(()=>{$('boot').classList.add('hide');show('auth');$('pw').focus()},600)},500)}},70);
   setInterval(()=>{$('clock').textContent=new Date().toTimeString().slice(0,8)},1000);
 })();
 
@@ -232,14 +252,14 @@ $('gbtn').onclick=async()=>{if(!('Notification' in window))return;let p=Notifica
 function passed(){try{new Notification('HỆ THỐNG SƠ ĐỒ',{body:'Đã bật thông báo thành công.'})}catch{}$('gate').classList.add('out');setTimeout(()=>{show('auth');$('pw').focus()},400)}
 
 /* ---------- MẬT KHẨU + TÊN ---------- */
-function doAuth(){const m=$('amsg');if($('pw').value.trim().toLowerCase()===PASS){m.className='msg ok';m.textContent='MẬT KHẨU CHÍNH XÁC';setTimeout(()=>{show('name');$('nm').focus()},350)}else{m.className='msg';m.textContent='MẬT KHẨU KHÔNG CHÍNH XÁC!'}}
+function doAuth(){const m=$('amsg'),v=$('pw').value.trim().toLowerCase();if(v===PASS_M||v===PASS_A){isAdmin=v===PASS_A;m.className='msg ok';m.textContent=isAdmin?'XÁC NHẬN QUYỀN ĐỘI TRƯỞNG':'MẬT KHẨU CHÍNH XÁC';setTimeout(()=>{show('name');$('nm').focus()},350)}else{m.className='msg';m.textContent='MẬT KHẨU KHÔNG CHÍNH XÁC!'}}
 $('abtn').onclick=doAuth;$('pw').onkeydown=e=>{if(e.key==='Enter')doAuth()};
 async function doName(){const name=$('nm').value.trim(),k=key(name),m=$('nmsg');m.className='msg';
   if(name.length<2||!k){m.textContent='Tên cần ít nhất 2 ký tự hợp lệ.';return}
-  $('nbtn').textContent='ĐANG KIỂM TRA...';await storeP;const cap=k==='hieu';
+  $('nbtn').textContent='ĐANG KIỂM TRA...';await storeP;const cap=isAdmin;
   const ex=await C.members.get(k).catch(()=>null);
-  if(ex&&ex.uid!==uid&&!cap){m.textContent='Tên này đã có người dùng, hãy chọn tên khác.';$('nbtn').textContent='VÀO BẢN ĐỒ';return}
-  me={name:cap?'Hiếu':name,key:k,cap,uid,pts:ex?ex.pts||0:0};joinT=Date.now();
+  if(ex&&ex.uid!==uid&&!(cap&&ex.cap)){m.textContent='Tên này đã có người dùng, hãy chọn tên khác.';$('nbtn').textContent='VÀO BẢN ĐỒ';return}
+  me={name,key:k,cap,uid,pts:ex?ex.pts||0:0};joinT=Date.now();
   await beat();setInterval(()=>{me.pts+=5;beat()},30000);enter()}
 $('nbtn').onclick=doName;$('nm').onkeydown=e=>{if(e.key==='Enter')doName()};
 const beat=()=>Promise.resolve(C.members.set(me.key,{name:me.name,cap:me.cap,uid:me.uid,pts:me.pts,t:Date.now()})).catch(()=>{});
@@ -247,9 +267,9 @@ const beat=()=>Promise.resolve(C.members.set(me.key,{name:me.name,cap:me.cap,uid
 /* ---------- VÀO BẢN ĐỒ ---------- */
 async function enter(){
   show('warp');const W=['ĐỊNH VỊ KHU VỰC','ĐỒNG BỘ SƠ ĐỒ','XÁC THỰC DANH TÍNH','ĐANG TIẾN VÀO KHU VỰC'];let i=0;const wt=setInterval(()=>{$('wt').textContent=W[Math.min(++i,3)]},550);
-  $('app').classList.remove('hide');$('who').textContent=me.cap?'👑 ĐỘI TRƯỞNG · HIẾU':'THÀNH VIÊN · '+me.name.toUpperCase();$('who').classList.toggle('cap',me.cap);
+  $('app').classList.remove('hide');$('who').textContent=me.cap?'👑 ĐỘI TRƯỞNG · '+me.name.toUpperCase():'THÀNH VIÊN · '+me.name.toUpperCase();$('who').classList.toggle('cap',me.cap);
   document.querySelectorAll('#palette,#bnotice').forEach(e=>e.classList.toggle('hide',!me.cap));
-  buildTypes();initMap();wire();await sleep(2300);clearInterval(wt);
+  try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch{}buildTypes();initMap();wire();await sleep(2300);clearInterval(wt);
   $('warp').classList.add('out');setTimeout(()=>$('warp').classList.add('hide'),600);
   map.invalidateSize();map.flyToBounds(L.polygon(POLY).getBounds(),{padding:[70,70],duration:2.6,maxZoom:21});
   toast('CHÀO MỪNG',me.cap?'Bạn là Đội trưởng. Bạn có thể đặt mốc, vẽ đường đi và gửi thông báo.':'Bạn đang xem sơ đồ với tư cách thành viên.');
@@ -264,7 +284,7 @@ function initMap(){
   const Grid=L.GridLayer.extend({createTile(){const t=document.createElement('canvas');t.width=t.height=256;const x=t.getContext('2d');x.strokeStyle='rgba(0,240,255,.11)';for(let i=0;i<=256;i+=32){x.beginPath();x.moveTo(i+.5,0);x.lineTo(i+.5,256);x.moveTo(0,i+.5);x.lineTo(256,i+.5);x.stroke()}x.strokeStyle='rgba(0,240,255,.25)';x.strokeRect(.5,.5,255,255);return t}});
   new Grid({maxZoom:22,zIndex:1}).addTo(map);
   // ảnh nền (vệ tinh / đường phố) - tự động báo nếu không tải được
-  const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22,maxNativeZoom:19,zIndex:0});
+  const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22,maxNativeZoom:17,zIndex:0});
   const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,maxNativeZoom:19,subdomains:'abc',zIndex:0});
   const layers=[sat,osm,null];let li=0,err=0,ok=0;
   const watch=l=>{if(!l)return;l.on('tileload',()=>{ok++;$('badge').classList.add('hide')});l.on('tileerror',()=>{if(++err>4&&!ok){$('badge').textContent='Ảnh nền bản đồ không tải được trong môi trường này, đang dùng nền sơ đồ lưới. Mở file trên máy có mạng để có ảnh vệ tinh.';$('badge').classList.remove('hide')}})};
@@ -297,13 +317,13 @@ function buildTypes(){const box=$('types');box.innerHTML='';Object.entries(TYPES
 async function onClick(e){if(!me.cap)return;
   if(drawing){if(!inPoly(e.latlng))return toast('NGOÀI KHU VỰC','Chỉ vẽ đường trong khu vực.');drawing.pts.push([e.latlng.lat,e.latlng.lng]);drawing.line.setLatLngs(drawing.pts);return}
   if(!selType)return;if(!inPoly(e.latlng))return toast('NGOÀI KHU VỰC','Chỉ đặt mốc trong khu vực được phép xem.');
-  const t=TYPES[selType];const name=await ask('TÊN MỐC',t.l,t.l);if(name===null)return;const id='m'+Date.now();
+  const t=TYPES[selType];const name=await ask('GHI TÊN MỐC · '+t.l.toUpperCase(),'Ví dụ: Camera cổng trước, Khoan số 2...','');if(name===null)return;const id='m'+Date.now();
   await C.markers.set(id,{type:selType,name:name||t.l,lat:e.latlng.lat,lng:e.latlng.lng,by:me.name,t:Date.now()}).catch(()=>{});send('CẬP NHẬT SƠ ĐỒ','Đã thêm mốc: '+(name||t.l))}
 function renderMarkers(){if(!window.mg)return;mg.clearLayers();const box=$('pins');box.innerHTML='';$('pc').textContent=markers.length;
   if(!markers.length)box.innerHTML='<div class="empty">Chưa có mốc nào trên bản đồ.</div>';
   markers.sort((a,b)=>b.t-a.t).forEach(m=>{const t=TYPES[m.type]||TYPES.patrol;
     const mm=L.marker([m.lat,m.lng],{icon:L.divIcon({className:'',html:'<div class="pin" style="--c:'+t.c+'">'+t.e+'</div>',iconSize:[38,38],iconAnchor:[19,19]})}).addTo(mg);
-    const d=document.createElement('div');d.innerHTML='<b style="color:'+t.c+'">'+esc(m.name)+'</b><br>'+t.l+'<br><span style="color:#7d8ba3">Bởi '+esc(m.by)+' · '+new Date(m.t).toLocaleTimeString('vi-VN')+'</span>';
+    L.marker([m.lat,m.lng],{icon:L.divIcon({className:'',html:'<div class="lb2" style="--c:'+t.c+'">'+esc(m.name)+'</div>',iconSize:[0,0]}),interactive:false,zIndexOffset:-100}).addTo(mg);const d=document.createElement('div');d.innerHTML='<b style="color:'+t.c+'">'+esc(m.name)+'</b><br>'+t.l+'<br><span style="color:#7d8ba3">Bởi '+esc(m.by)+' · '+new Date(m.t).toLocaleTimeString('vi-VN')+'</span>';
     if(me.cap){const b=document.createElement('button');b.className='sb r';b.style.marginTop='8px';b.textContent='XÓA MỐC';b.onclick=()=>{C.markers.del(m.id);map.closePopup();send('CẬP NHẬT SƠ ĐỒ','Đã xóa mốc: '+m.name)};d.appendChild(b)}
     mm.bindPopup(d);
     const r=document.createElement('div');r.className='row';r.innerHTML='<div style="font-size:18px">'+t.e+'</div><div class="nm">'+esc(m.name)+'</div>';r.onclick=()=>{map.flyTo([m.lat,m.lng],Math.max(map.getZoom(),20),{duration:1});mm.openPopup()};box.appendChild(r)})}
